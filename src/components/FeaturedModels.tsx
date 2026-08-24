@@ -1,80 +1,94 @@
 "use client";
 
 import { useState } from "react";
+import { models, type AssetType } from "@/data/models";
 
-const models = [
-  {
-    name: "Cyberpunk Helmet",
-    category: "Characters",
-    creator: "Alex Morgan",
-    price: "$24",
-    rating: "4.9",
-  },
-  {
-    name: "Modern Chair",
-    category: "Furniture",
-    creator: "Studio North",
-    price: "$18",
-    rating: "4.8",
-  },
-  {
-    name: "Sci-Fi Vehicle",
-    category: "Vehicles",
-    creator: "Daniel Park",
-    price: "$32",
-    rating: "5.0",
-  },
+interface FeaturedModelsProps {
+  query: string;
+}
+
+const filters: { label: string; value: "all" | AssetType }[] = [
+  { label: "All", value: "all" },
+  { label: "Models", value: "model" },
+  { label: "Materials", value: "material" },
+  { label: "HDRI", value: "hdri" },
+  { label: "Textures", value: "texture" },
+  { label: "Brushes", value: "brush" },
 ];
 
-export default function FeaturedModels() {
-  const [query, setQuery] = useState("");
+export default function FeaturedModels({ query }: FeaturedModelsProps) {
+  const [activeFilter, setActiveFilter] = useState<"all" | AssetType>("all");
+
+  const normalizedQuery = (query ?? "").trim().toLowerCase();
 
   const filteredModels = models.filter((model) => {
-    const searchText = `${model.name} ${model.category} ${model.creator}`.toLowerCase();
+    const matchesFilter =
+      activeFilter === "all" || model.type === activeFilter;
 
-    return searchText.includes(query.toLowerCase());
+    const searchableText = [
+      model.name,
+      model.category,
+      model.creator,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    const matchesSearch = searchableText.includes(normalizedQuery);
+
+    return matchesFilter && matchesSearch;
   });
 
   return (
     <section id="models" className="px-6 py-24 sm:px-10 lg:px-16">
       <div className="mx-auto w-full max-w-7xl">
-        <div className="mb-12 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-          <div>
-            <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
-              Discover
-            </p>
+        <div className="mb-10">
+          <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
+            Discover
+          </p>
 
-            <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              Featured models
-            </h2>
-          </div>
-
-          <a
-            href="#models"
-            className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-          >
-            View all models →
-          </a>
+          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Digital assets
+          </h2>
         </div>
 
-        <div className="mb-8 w-full max-w-2xl">
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search 3D models..."
-            className="h-12 w-full rounded-full border border-white/10 bg-white/[0.04] px-5 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-white/20"
-          />
+        <div className="mb-10 flex flex-wrap gap-2">
+          {filters.map((filter) => {
+            const isActive = activeFilter === filter.value;
+
+            return (
+              <button
+                key={filter.value}
+                onClick={() => setActiveFilter(filter.value)}
+                className={`rounded-full px-5 py-2.5 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-white text-black"
+                    : "border border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
         </div>
 
         {filteredModels.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredModels.map((model) => (
               <article
-                key={model.name}
+                key={model.slug}
                 className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition-colors hover:border-white/20"
               >
-                <div className="aspect-[4/3] bg-gradient-to-br from-zinc-800 via-zinc-900 to-black" />
+                <div className="aspect-[4/3] overflow-hidden bg-zinc-900">
+                  {model.image ? (
+                    <img
+                      src={model.image}
+                      alt={model.name}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-br from-zinc-800 via-zinc-900 to-black" />
+                  )}
+                </div>
 
                 <div className="p-5">
                   <div className="mb-4 flex items-start justify-between gap-4">
@@ -102,11 +116,11 @@ export default function FeaturedModels() {
                   </div>
 
                   <a
-  href={`/models/${model.name.toLowerCase().replaceAll(" ", "-")}`}
-  className="flex w-full items-center justify-center rounded-full border border-white/10 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-white hover:text-black"
->
-  View model
-</a>
+                    href={`/models/${model.slug}`}
+                    className="flex w-full items-center justify-center rounded-full border border-white/10 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-white hover:text-black"
+                  >
+                    View asset
+                  </a>
                 </div>
               </article>
             ))}
@@ -114,11 +128,11 @@ export default function FeaturedModels() {
         ) : (
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center">
             <p className="text-lg font-medium text-white">
-              No models found
+              No assets yet
             </p>
 
             <p className="mt-2 text-sm text-zinc-500">
-              Try another search term.
+              This category is waiting for new content.
             </p>
           </div>
         )}
