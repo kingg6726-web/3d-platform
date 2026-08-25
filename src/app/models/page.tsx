@@ -4,7 +4,7 @@ export default async function ModelsPage() {
   const { data: modelAssets, error } = await supabase
     .from("assets")
     .select("*")
-    .eq("type", "model")
+    .eq("type", "Model")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -25,6 +25,26 @@ export default async function ModelsPage() {
     );
   }
 
+  const modelsWithImages = await Promise.all(
+    (modelAssets ?? []).map(async (model) => {
+      if (!model.image) {
+        return {
+          ...model,
+          imageUrl: null,
+        };
+      }
+
+      const { data: imageData } = await supabase.storage
+        .from("assets")
+        .createSignedUrl(model.image, 60 * 60);
+
+      return {
+        ...model,
+        imageUrl: imageData?.signedUrl ?? null,
+      };
+    })
+  );
+
   return (
     <main className="min-h-screen bg-black px-6 py-24 text-white sm:px-10 lg:px-16">
       <div className="mx-auto w-full max-w-7xl">
@@ -42,22 +62,26 @@ export default async function ModelsPage() {
           </p>
         </div>
 
-        {modelAssets && modelAssets.length > 0 ? (
+        {modelsWithImages.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {modelAssets.map((model) => (
+            {modelsWithImages.map((model) => (
               <article
                 key={model.slug}
                 className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
               >
                 <div className="aspect-[4/3] overflow-hidden bg-zinc-900">
-                  {model.image ? (
+                  {model.imageUrl ? (
                     <img
-                      src={model.image}
+                      src={model.imageUrl}
                       alt={model.name}
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full bg-gradient-to-br from-zinc-800 via-zinc-900 to-black" />
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 via-zinc-900 to-black">
+                      <span className="text-sm text-zinc-600">
+                        No preview
+                      </span>
+                    </div>
                   )}
                 </div>
 

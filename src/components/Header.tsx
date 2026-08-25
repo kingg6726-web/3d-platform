@@ -45,7 +45,7 @@ export default function Header() {
 
         <nav className="hidden items-center gap-8 md:flex">
           <a
-            href="#models"
+            href="/models"
             className="text-sm text-zinc-400 transition-colors hover:text-white"
           >
             Models
