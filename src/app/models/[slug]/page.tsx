@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import DownloadButton from "./DownloadButton";
+import ModelPreview from "./ModelPreview";
 
 type ModelPageProps = {
   params: Promise<{
@@ -23,16 +24,6 @@ export default async function ModelPage({
     notFound();
   }
 
-  let imageUrl: string | null = null;
-
-  if (model.image) {
-    const { data: imageData } = await supabase.storage
-      .from("assets")
-      .createSignedUrl(model.image, 60 * 60);
-
-    imageUrl = imageData?.signedUrl ?? null;
-  }
-
   return (
     <main className="min-h-screen bg-black px-6 py-24 text-white sm:px-10 lg:px-16">
       <div className="mx-auto w-full max-w-7xl">
@@ -45,21 +36,10 @@ export default async function ModelPage({
 
         <div className="mt-10 grid gap-10 lg:grid-cols-[1.4fr_1fr]">
           <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
-            <div className="aspect-[4/3] overflow-hidden bg-zinc-900">
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={model.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 via-zinc-900 to-black">
-                  <span className="text-sm text-zinc-600">
-                    No preview available
-                  </span>
-                </div>
-              )}
-            </div>
+            <ModelPreview
+              imagePath={model.image ?? null}
+              alt={model.name}
+            />
           </div>
 
           <div className="flex flex-col justify-center">
@@ -81,7 +61,9 @@ export default async function ModelPage({
               </span>
 
               <span className="text-lg font-medium">
-                {model.price === "0" ? "Free" : model.price}
+                {model.price === "0"
+                  ? "Free"
+                  : model.price}
               </span>
             </div>
 
@@ -91,11 +73,14 @@ export default async function ModelPage({
               </h2>
 
               <p className="mt-3 leading-7 text-zinc-400">
-                {model.description || "No description provided."}
+                {model.description ||
+                  "No description provided."}
               </p>
             </div>
 
-            <DownloadButton filePath={model.file ?? null} />
+            <DownloadButton
+              filePath={model.file ?? null}
+            />
           </div>
         </div>
       </div>

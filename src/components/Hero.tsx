@@ -1,3 +1,5 @@
+import StartCreatingButton from "./StartCreatingButton";
+
 export default function Hero() {
   return (
     <section className="relative overflow-hidden">
@@ -28,12 +30,7 @@ export default function Hero() {
               Explore models
             </a>
 
-            <a
-              href="#create"
-              className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 px-7 text-sm font-medium text-white transition-colors hover:bg-white/5"
-            >
-              Start creating
-            </a>
+            <StartCreatingButton />
           </div>
         </div>
       </div>
