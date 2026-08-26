@@ -22,7 +22,7 @@ export default function StartCreatingButton() {
 
   if (loading) {
     return (
-      <span className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 px-7 text-sm font-medium text-white">
+      <span className="inline-flex h-12 items-center justify-center rounded-full border border-theme px-7 text-sm font-medium text-foreground">
         Start creating
       </span>
     );
@@ -31,7 +31,7 @@ export default function StartCreatingButton() {
   return (
     <a
       href={isLoggedIn ? "/profile" : "/signup"}
-      className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 px-7 text-sm font-medium text-white transition-colors hover:bg-white/5"
+      className="inline-flex h-12 items-center justify-center rounded-full border border-theme px-7 text-sm font-medium text-foreground transition-colors hover:bg-surface"
     >
       Start creating
     </a>
