@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
+import MyVideoCard from "./MyVideoCard";
 
 type Profile = {
   username: string | null;
@@ -20,10 +21,21 @@ type Asset = {
   imageUrl: string | null;
 };
 
+type Video = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  creator: string | null;
+  video: string;
+  thumbnail: string | null;
+};
+
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -31,6 +43,18 @@ export default function ProfilePage() {
 
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+
+  async function loadVideos(userId: string) {
+    const { data } = await supabase
+      .from("videos")
+      .select(
+        "id, slug, title, description, creator, video, thumbnail"
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    setVideos(data ?? []);
+  }
 
   useEffect(() => {
     async function loadProfile() {
@@ -84,6 +108,8 @@ export default function ProfilePage() {
 
       setAssets(assetsWithImages);
 
+      await loadVideos(user.id);
+
       setLoading(false);
     }
 
@@ -125,6 +151,11 @@ export default function ProfilePage() {
     setSaving(false);
   }
 
+  async function handleVideosChanged() {
+    if (!user) return;
+    await loadVideos(user.id);
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -158,12 +189,9 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-5xl">
-
         <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8">
-
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-
               <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-white text-4xl font-semibold text-black">
                 K
               </div>
@@ -195,7 +223,6 @@ export default function ProfilePage() {
 
           {editing ? (
             <div className="mt-10 space-y-6">
-
               <div>
                 <label className="text-sm text-zinc-400">
                   Username
@@ -225,7 +252,6 @@ export default function ProfilePage() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-
                 <button
                   onClick={saveProfile}
                   disabled={saving}
@@ -245,13 +271,11 @@ export default function ProfilePage() {
                 >
                   Cancel
                 </button>
-
               </div>
             </div>
           ) : (
             <>
               <div className="mt-10 grid gap-6 sm:grid-cols-2">
-
                 <div className="rounded-2xl border border-white/10 bg-black/30 p-5">
                   <p className="text-sm text-zinc-500">
                     Email
@@ -271,7 +295,6 @@ export default function ProfilePage() {
                     {displayUsername}
                   </p>
                 </div>
-
               </div>
 
               <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-5">
@@ -288,9 +311,7 @@ export default function ProfilePage() {
         </div>
 
         <section className="mt-12">
-
           <div className="mb-6 flex items-center justify-between gap-4">
-
             <div>
               <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">
                 Creator
@@ -307,19 +328,16 @@ export default function ProfilePage() {
             >
               + Add Asset
             </a>
-
           </div>
 
           {assets.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-
               {assets.map((asset) => (
                 <article
                   key={asset.id}
                   className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition-colors hover:border-white/20"
                 >
                   <div className="aspect-[4/3] overflow-hidden bg-zinc-900">
-
                     {asset.imageUrl ? (
                       <img
                         src={asset.imageUrl}
@@ -333,13 +351,10 @@ export default function ProfilePage() {
                         </span>
                       </div>
                     )}
-
                   </div>
 
                   <div className="p-5">
-
                     <div className="flex items-start justify-between gap-4">
-
                       <div>
                         <h3 className="font-medium text-white">
                           {asset.name}
@@ -351,9 +366,10 @@ export default function ProfilePage() {
                       </div>
 
                       <span className="text-sm font-medium text-white">
-                        {asset.price === "0" ? "Free" : asset.price}
+                        {asset.price === "0"
+                          ? "Free"
+                          : asset.price}
                       </span>
-
                     </div>
 
                     <a
@@ -362,15 +378,12 @@ export default function ProfilePage() {
                     >
                       View asset
                     </a>
-
                   </div>
                 </article>
               ))}
-
             </div>
           ) : (
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center">
-
               <p className="text-lg font-medium text-white">
                 No assets yet
               </p>
@@ -385,12 +398,59 @@ export default function ProfilePage() {
               >
                 Add your first asset
               </a>
-
             </div>
           )}
-
         </section>
 
+        <section className="mt-16">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">
+                Creator
+              </p>
+
+              <h2 className="mt-2 text-3xl font-semibold">
+                My Videos
+              </h2>
+            </div>
+
+            <a
+              href="/videos/upload"
+              className="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-zinc-200"
+            >
+              + Upload Video
+            </a>
+          </div>
+
+          {videos.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {videos.map((video) => (
+                <MyVideoCard
+                  key={video.id}
+                  video={video}
+                  onDeleted={handleVideosChanged}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center">
+              <p className="text-lg font-medium text-white">
+                No videos yet
+              </p>
+
+              <p className="mt-2 text-sm text-zinc-500">
+                Upload your first video and share it with the community.
+              </p>
+
+              <a
+                href="/videos/upload"
+                className="mt-6 inline-flex rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition-colors hover:bg-zinc-200"
+              >
+                Upload your first video
+              </a>
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );

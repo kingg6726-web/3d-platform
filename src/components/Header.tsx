@@ -119,7 +119,7 @@ export default function Header() {
                       onClick={() => setMenuOpen(false)}
                       className="block rounded-xl px-3 py-2.5 text-sm text-[var(--muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--foreground)]"
                     >
-                      My Assets
+                      My Assets/Videos
                     </a>
 
                     <a
