@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import DownloadButton from "./DownloadButton";
 import ModelPreview from "./ModelPreview";
+import FavoriteButton from "./FavoriteButton";
 
 type ModelPageProps = {
   params: Promise<{
@@ -61,9 +62,7 @@ export default async function ModelPage({
               </span>
 
               <span className="text-lg font-medium">
-                {model.price === "0"
-                  ? "Free"
-                  : model.price}
+                {model.price === "0" ? "Free" : model.price}
               </span>
             </div>
 
@@ -73,13 +72,16 @@ export default async function ModelPage({
               </h2>
 
               <p className="mt-3 leading-7 text-zinc-400">
-                {model.description ||
-                  "No description provided."}
+                {model.description || "No description provided."}
               </p>
             </div>
 
             <DownloadButton
               filePath={model.file ?? null}
+            />
+
+            <FavoriteButton
+              assetId={model.id}
             />
           </div>
         </div>

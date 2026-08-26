@@ -54,14 +54,14 @@ export default function Header() {
           </a>
 
           <a
-            href="#creators"
+            href="/authors"
             className="text-sm text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
           >
-            Creators
+            Authors
           </a>
 
           <a
-            href="#videos"
+            href="/videos"
             className="text-sm text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
           >
             Videos
@@ -123,6 +123,14 @@ export default function Header() {
                     </a>
 
                     <a
+                      href="/favorites"
+                      onClick={() => setMenuOpen(false)}
+                      className="block rounded-xl px-3 py-2.5 text-sm text-[var(--muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--foreground)]"
+                    >
+                      Favorites
+                    </a>
+
+                    <a
                       href="/settings"
                       onClick={() => setMenuOpen(false)}
                       className="block rounded-xl px-3 py-2.5 text-sm text-[var(--muted)] transition-colors hover:bg-[var(--surface)] hover:text-[var(--foreground)]"
@@ -155,7 +163,7 @@ export default function Header() {
 
             <a
               href="/signup"
-              className="rounded-full bg-[var(--foreground)] px-5 py-2.5 text-sm font-medium text-[var(--background)] transition-colors hover:opacity-80"
+              className="rounded-full bg-[var(--foreground)] px-5 py-2.5 text-sm font-medium text-[var(--background)] transition-opacity hover:opacity-80"
             >
               Sign up
             </a>

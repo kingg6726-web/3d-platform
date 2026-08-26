@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import FavoriteCardHeart from "./FavoriteCardHeart";
 
 type AssetType =
   | "model"
@@ -180,7 +181,7 @@ export default function FeaturedModels({
                 key={asset.id}
                 className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition-colors hover:border-white/20"
               >
-                <div className="aspect-[4/3] overflow-hidden bg-zinc-900">
+                <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
                   {imageUrls[asset.id] ? (
                     <img
                       src={imageUrls[asset.id]}
@@ -194,6 +195,8 @@ export default function FeaturedModels({
                       </span>
                     </div>
                   )}
+
+                  <FavoriteCardHeart assetId={asset.id} />
                 </div>
 
                 <div className="p-5">

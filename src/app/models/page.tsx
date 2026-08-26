@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import ModelCardImage from "./ModelCardImage";
+import FavoriteCardHeart from "@/components/FavoriteCardHeart";
 
 export default async function ModelsPage() {
   const { data: modelAssets, error } = await supabase
@@ -50,11 +51,13 @@ export default async function ModelsPage() {
                 key={model.slug}
                 className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
               >
-                <div className="aspect-[4/3] overflow-hidden bg-zinc-900">
+                <div className="relative aspect-[4/3] overflow-hidden bg-zinc-900">
                   <ModelCardImage
                     imagePath={model.image ?? null}
                     alt={model.name}
                   />
+
+                  <FavoriteCardHeart assetId={model.id} />
                 </div>
 
                 <div className="p-5">
