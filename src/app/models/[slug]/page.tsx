@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import DownloadButton from "./DownloadButton";
 import ModelPreview from "./ModelPreview";
 import FavoriteButton from "./FavoriteButton";
+import ConditionalDeleteAssetButton from "./ConditionalDeleteAssetButton";
 
 type ModelPageProps = {
   params: Promise<{
@@ -82,6 +83,13 @@ export default async function ModelPage({
 
             <FavoriteButton
               assetId={model.id}
+            />
+
+            <ConditionalDeleteAssetButton
+              assetId={model.id}
+              assetFile={model.file ?? null}
+              assetImage={model.image ?? null}
+              ownerId={model.user_id}
             />
           </div>
         </div>

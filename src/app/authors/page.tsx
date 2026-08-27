@@ -1,10 +1,20 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
+type Profile = {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+};
+
 export default async function AuthorsPage() {
-  const { data: assets, error } = await supabase
-    .from("assets")
-    .select("creator");
+  const { data: profiles, error } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, avatar_url, bio")
+    .not("username", "is", null)
+    .order("created_at", { ascending: false });
 
   if (error) {
     return (
@@ -24,17 +34,10 @@ export default async function AuthorsPage() {
     );
   }
 
-  const authors = Array.from(
-    new Set(
-      (assets ?? [])
-        .map((asset) => asset.creator)
-        .filter(Boolean)
-    )
-  );
-
   return (
     <main className="min-h-screen bg-black px-6 py-24 text-white sm:px-10 lg:px-16">
       <div className="mx-auto w-full max-w-7xl">
+
         <div className="mb-12">
           <p className="mb-3 text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
             3D Marketplace
@@ -49,45 +52,77 @@ export default async function AuthorsPage() {
           </p>
         </div>
 
-        {authors.length > 0 ? (
+        {profiles && profiles.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {authors.map((author) => (
-              <article
-                key={author}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors hover:border-white/20"
-              >
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-xl font-semibold text-black">
-                  {author.charAt(0).toUpperCase()}
-                </div>
 
-                <h2 className="mt-5 text-xl font-medium">
-                  {author}
-                </h2>
+            {profiles.map((profile: Profile) => {
+              const name =
+                profile.display_name ||
+                profile.username ||
+                "User";
 
-                <p className="mt-2 text-sm text-zinc-500">
-                  3D Creator
-                </p>
+              const username =
+                profile.username || "user";
 
-                <Link
-                  href={`/authors/${encodeURIComponent(author)}`}
-                  className="mt-6 block w-full rounded-full border border-white/10 py-2.5 text-center text-sm font-medium text-zinc-300 transition-colors hover:bg-white hover:text-black"
+              const initial =
+                name.charAt(0).toUpperCase();
+
+              return (
+                <article
+                  key={profile.id}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors hover:border-white/20"
                 >
-                  View profile
-                </Link>
-              </article>
-            ))}
+
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={name}
+                      className="h-16 w-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-xl font-semibold text-black">
+                      {initial}
+                    </div>
+                  )}
+
+                  <h2 className="mt-5 text-xl font-medium">
+                    {name}
+                  </h2>
+
+                  <p className="mt-1 text-sm text-zinc-500">
+                    @{username}
+                  </p>
+
+                  <p className="mt-3 line-clamp-2 text-sm text-zinc-500">
+                    {profile.bio || "3D Creator"}
+                  </p>
+
+                  <Link
+                    href={`/authors/${encodeURIComponent(username)}`}
+                    className="mt-6 block w-full rounded-full border border-white/10 py-2.5 text-center text-sm font-medium text-zinc-300 transition-colors hover:bg-white hover:text-black"
+                  >
+                    View profile
+                  </Link>
+
+                </article>
+              );
+            })}
+
           </div>
         ) : (
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center">
+
             <p className="text-lg font-medium">
               No authors yet
             </p>
 
             <p className="mt-2 text-sm text-zinc-500">
-              Creators will appear here when they publish assets.
+              Creators will appear here when they create a profile.
             </p>
+
           </div>
         )}
+
       </div>
     </main>
   );

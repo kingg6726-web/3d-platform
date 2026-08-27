@@ -8,6 +8,7 @@ import MyVideoCard from "./MyVideoCard";
 type Profile = {
   username: string | null;
   bio: string | null;
+  avatar_url: string | null;
 };
 
 type Asset = {
@@ -54,6 +55,18 @@ export default function ProfilePage() {
     setVideos(data ?? []);
   }
 
+  async function loadProfileData(userId: string) {
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("username, bio, avatar_url")
+      .eq("id", userId)
+      .single();
+
+    setProfile(profileData);
+    setUsername(profileData?.username || "");
+    setBio(profileData?.bio || "");
+  }
+
   useEffect(() => {
     async function loadProfile() {
       const {
@@ -67,15 +80,7 @@ export default function ProfilePage() {
 
       setUser(user);
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("username, bio")
-        .eq("id", user.id)
-        .single();
-
-      setProfile(profile);
-      setUsername(profile?.username || "");
-      setBio(profile?.bio || "");
+      await loadProfileData(user.id);
 
       const { data: userAssets } = await supabase
         .from("assets")
@@ -104,7 +109,9 @@ export default function ProfilePage() {
       );
 
       setAssets(assetsWithImages);
+
       await loadVideos(user.id);
+
       setLoading(false);
     }
 
@@ -114,6 +121,13 @@ export default function ProfilePage() {
   async function saveProfile() {
     if (!user) return;
 
+    const cleanUsername = username.trim();
+
+    if (!cleanUsername) {
+      alert("Username cannot be empty.");
+      return;
+    }
+
     setSaving(true);
 
     const { data, error } = await supabase
@@ -121,19 +135,25 @@ export default function ProfilePage() {
       .upsert(
         {
           id: user.id,
-          username: username.trim() || null,
+          username: cleanUsername,
           bio: bio.trim() || null,
         },
         {
           onConflict: "id",
         }
       )
-      .select("username, bio")
+      .select("username, bio, avatar_url")
       .single();
 
     if (error) {
       console.error("Error saving profile:", error);
-      alert("Failed to save profile.");
+
+      if (error.code === "23505") {
+        alert("This username is already taken.");
+      } else {
+        alert("Failed to save profile.");
+      }
+
       setSaving(false);
       return;
     }
@@ -164,7 +184,10 @@ export default function ProfilePage() {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
         <div className="mx-auto max-w-4xl">
-          <h1 className="text-3xl font-semibold">Not signed in</h1>
+          <h1 className="text-3xl font-semibold">
+            Not signed in
+          </h1>
+
           <p className="mt-3 text-zinc-400">
             Please sign in first.
           </p>
@@ -174,10 +197,13 @@ export default function ProfilePage() {
   }
 
   const displayUsername =
-    profile?.username || "username not set";
+    profile?.username || "user";
 
   const displayBio =
     profile?.bio || "bio not set";
+
+  const avatarLetter =
+    displayUsername.charAt(0).toUpperCase();
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -189,8 +215,16 @@ export default function ProfilePage() {
 
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
 
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-white text-4xl font-semibold text-black">
-                K
+              <div className="flex h-24 w-24 shrink-0 overflow-hidden items-center justify-center rounded-full bg-white text-4xl font-semibold text-black">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={displayUsername}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  avatarLetter
+                )}
               </div>
 
               <div>
@@ -199,7 +233,7 @@ export default function ProfilePage() {
                 </p>
 
                 <h1 className="mt-2 text-4xl font-semibold">
-                  King
+                  {displayUsername}
                 </h1>
 
                 <p className="mt-2 text-zinc-400">
@@ -211,6 +245,7 @@ export default function ProfilePage() {
 
             {!editing && (
               <button
+                type="button"
                 onClick={() => setEditing(true)}
                 className="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-zinc-200"
               >
@@ -233,8 +268,13 @@ export default function ProfilePage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter your username"
+                  maxLength={30}
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none transition focus:border-white/30"
                 />
+
+                <p className="mt-2 text-xs text-zinc-600">
+                  This name will be visible to other users.
+                </p>
               </div>
 
               <div>
@@ -247,13 +287,28 @@ export default function ProfilePage() {
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Tell people about yourself"
                   rows={4}
+                  maxLength={300}
                   className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none transition focus:border-white/30"
                 />
+              </div>
+
+              <div>
+                <label className="text-sm text-zinc-400">
+                  Avatar
+                </label>
+
+                <div className="mt-2 rounded-2xl border border-white/10 bg-black/30 p-4">
+                  <p className="text-sm text-zinc-500">
+                    Avatar upload will be added next. Until then,
+                    your profile uses the first letter of your username.
+                  </p>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-3">
 
                 <button
+                  type="button"
                   onClick={saveProfile}
                   disabled={saving}
                   className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
@@ -262,6 +317,7 @@ export default function ProfilePage() {
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => {
                     setUsername(profile?.username || "");
                     setBio(profile?.bio || "");

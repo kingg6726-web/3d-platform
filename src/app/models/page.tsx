@@ -1,9 +1,23 @@
 import { supabase } from "@/lib/supabase";
 import ModelCardImage from "./ModelCardImage";
 import FavoriteCardHeart from "@/components/FavoriteCardHeart";
+import DeleteAssetButton from "./DeleteAssetButton";
+
+const ADMIN_USER_ID = "86c0ce00-4bd4-4305-9b4e-8a3837d362b4";
 
 export default async function ModelsPage() {
-  const { data: modelAssets, error } = await supabase
+  const {
+    data: {
+      user,
+    },
+  } = await supabase.auth.getUser();
+
+  const isAdmin = user?.id === ADMIN_USER_ID;
+
+  const {
+    data: modelAssets,
+    error,
+  } = await supabase
     .from("assets")
     .select("*")
     .eq("type", "Model")
@@ -85,6 +99,14 @@ export default async function ModelsPage() {
                   >
                     View model
                   </a>
+
+                  {isAdmin && (
+                    <DeleteAssetButton
+                      assetId={model.id}
+                      assetFile={model.file ?? null}
+                      imageFile={model.image ?? null}
+                    />
+                  )}
                 </div>
               </article>
             ))}

@@ -11,7 +11,6 @@ export default function UploadPage() {
   const [price, setPrice] = useState("");
   const [preview, setPreview] = useState<File | null>(null);
   const [assetFile, setAssetFile] = useState<File | null>(null);
-
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -42,14 +41,28 @@ export default function UploadPage() {
 
       if (!user) {
         setMessage("You must be signed in.");
-        setPublishing(false);
         return;
       }
 
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      const username = profile?.username || "user";
+
       const timestamp = Date.now();
 
-      const previewPath = `${user.id}/${timestamp}-preview-${preview.name}`;
-      const assetPath = `${user.id}/${timestamp}-${assetFile.name}`;
+      const previewPath =
+        `${user.id}/${timestamp}-preview-${preview.name}`;
+
+      const assetPath =
+        `${user.id}/${timestamp}-${assetFile.name}`;
 
       const { error: previewError } = await supabase.storage
         .from("assets")
@@ -79,11 +92,11 @@ export default function UploadPage() {
       const { error: databaseError } = await supabase
         .from("assets")
         .insert({
-          slug,
+          slug: slug,
           name: name.trim(),
-          type,
+          type: type,
           category: category.trim(),
-          creator: "King",
+          creator: username,
           price: price || "0",
           rating: "0",
           description: description.trim(),
@@ -97,7 +110,6 @@ export default function UploadPage() {
       }
 
       setMessage("Asset published successfully!");
-
       setName("");
       setCategory("");
       setDescription("");
@@ -105,7 +117,7 @@ export default function UploadPage() {
       setPreview(null);
       setAssetFile(null);
     } catch (error) {
-      console.error(error);
+      console.error("PUBLISH ASSET ERROR:", error);
 
       if (error instanceof Error) {
         setMessage(`Publish failed: ${error.message}`);

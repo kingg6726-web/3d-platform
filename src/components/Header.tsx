@@ -4,24 +4,35 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function Header() {
-  const [email, setEmail] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    async function loadUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  async function loadUser() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      setEmail(user?.email ?? null);
+    if (!user) {
+      setUsername(null);
+      return;
     }
 
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .single();
+
+    setUsername(profile?.username || "user");
+  }
+
+  useEffect(() => {
     loadUser();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setEmail(session?.user?.email ?? null);
+    } = supabase.auth.onAuthStateChange(() => {
+      loadUser();
     });
 
     return () => {
@@ -31,7 +42,7 @@ export default function Header() {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    setEmail(null);
+    setUsername(null);
     setMenuOpen(false);
   }
 
@@ -68,7 +79,7 @@ export default function Header() {
           </a>
         </nav>
 
-        {email ? (
+        {username ? (
           <div
             className="relative"
             onMouseEnter={() => setMenuOpen(true)}
@@ -80,15 +91,15 @@ export default function Header() {
               className="flex items-center gap-3 rounded-full border border-[var(--border)] px-2 py-1.5 transition-colors hover:bg-[var(--surface)]"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--foreground)] text-xs font-semibold text-[var(--background)]">
-                {email.charAt(0).toUpperCase()}
+                {username.charAt(0).toUpperCase()}
               </div>
 
               <span className="hidden max-w-[180px] truncate text-sm text-[var(--muted)] sm:block">
-                {email}
+                {username}
               </span>
 
               <span className="px-1 text-xs text-[var(--muted)]">
-                ▼
+                ▾
               </span>
             </button>
 
@@ -101,7 +112,7 @@ export default function Header() {
                     </p>
 
                     <p className="mt-1 truncate text-sm text-[var(--foreground)]">
-                      {email}
+                      @{username}
                     </p>
                   </div>
 

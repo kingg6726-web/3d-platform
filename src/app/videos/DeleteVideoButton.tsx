@@ -10,6 +10,8 @@ type DeleteVideoButtonProps = {
   onDeleted: () => void;
 };
 
+const ADMIN_ID = "86c0ce00-4bd4-4305-9b4e-8a3837d362b4";
+
 export default function DeleteVideoButton({
   videoId,
   videoPath,
@@ -52,8 +54,13 @@ export default function DeleteVideoButton({
         throw new Error("Video not found.");
       }
 
-      if (video.user_id !== user.id) {
-        throw new Error("You can only delete your own videos.");
+      const isOwner = video.user_id === user.id;
+      const isAdmin = user.id === ADMIN_ID;
+
+      if (!isOwner && !isAdmin) {
+        throw new Error(
+          "You do not have permission to delete this video."
+        );
       }
 
       const filesToDelete = [videoPath];
@@ -70,11 +77,16 @@ export default function DeleteVideoButton({
         throw storageError;
       }
 
-      const { error: databaseError } = await supabase
+      let databaseQuery = supabase
         .from("videos")
         .delete()
-        .eq("id", videoId)
-        .eq("user_id", user.id);
+        .eq("id", videoId);
+
+      if (!isAdmin) {
+        databaseQuery = databaseQuery.eq("user_id", user.id);
+      }
+
+      const { error: databaseError } = await databaseQuery;
 
       if (databaseError) {
         throw databaseError;

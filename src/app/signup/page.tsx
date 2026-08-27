@@ -14,16 +14,24 @@ export default function SignUpPage() {
     setLoading(true);
     setMessage("");
 
+    const randomNumber = Math.floor(100000 + Math.random() * 900000);
+    const username = `user_${randomNumber}`;
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          username,
+        },
+      },
     });
 
     if (error) {
       setMessage(error.message);
     } else {
       setMessage(
-        "Account created. Check your email if confirmation is required."
+        `Account created. Your username is ${username}. Check your email if confirmation is required.`
       );
       setEmail("");
       setPassword("");
