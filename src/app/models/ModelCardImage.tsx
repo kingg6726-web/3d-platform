@@ -16,27 +16,17 @@ export default function ModelCardImage({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadImage() {
-      if (!imagePath) {
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase.storage
-        .from("assets")
-        .createSignedUrl(imagePath, 60 * 60);
-
-      if (error) {
-        console.error("MODEL IMAGE ERROR:", error);
-        setLoading(false);
-        return;
-      }
-
-      setImageUrl(data?.signedUrl ?? null);
+    if (!imagePath) {
       setLoading(false);
+      return;
     }
 
-    loadImage();
+    const { data } = supabase.storage
+      .from("assets")
+      .getPublicUrl(imagePath);
+
+    setImageUrl(data.publicUrl);
+    setLoading(false);
   }, [imagePath]);
 
   if (loading) {

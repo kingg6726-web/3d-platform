@@ -54,48 +54,96 @@ export default function FeaturedModels({
   >({});
 
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadAssets() {
       setLoading(true);
+      setErrorMessage(null);
 
-      const { data, error } = await supabase
-        .from("assets")
-        .select("*")
-        .order("created_at", {
-          ascending: false,
-        });
-
-      if (error) {
-        console.error("FEATURED ASSETS ERROR:", error);
-        setLoading(false);
-        return;
-      }
-
-      setAssets(data ?? []);
-
-      const urls: Record<string, string> = {};
-
-      for (const asset of data ?? []) {
-        if (!asset.image) {
-          continue;
-        }
-
-        const { data: imageData } =
-          await supabase.storage
+      try {
+        const result = await Promise.race([
+          supabase
             .from("assets")
-            .createSignedUrl(asset.image, 60 * 60);
+            .select(
+              "id, slug, name, type, category, creator, price, rating, description, image, created_at"
+            )
+            .order("created_at", {
+              ascending: false,
+            }),
 
-        if (imageData?.signedUrl) {
-          urls[asset.id] = imageData.signedUrl;
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error("Assets request timed out.")),
+              10000
+            )
+          ),
+        ]);
+
+        if (cancelled) {
+          return;
         }
-      }
 
-      setImageUrls(urls);
-      setLoading(false);
+        const { data, error } = result;
+
+        if (error) {
+          console.error("FEATURED ASSETS ERROR:", error);
+          setErrorMessage(
+            "Unable to load assets right now."
+          );
+          setLoading(false);
+          return;
+        }
+
+        const loadedAssets = (data ?? []) as Asset[];
+
+        setAssets(loadedAssets);
+        setLoading(false);
+
+        const urls: Record<string, string> = {};
+
+        for (const asset of loadedAssets) {
+          if (!asset.image) {
+            continue;
+          }
+
+          const { data: imageData } =
+            supabase.storage
+              .from("assets")
+              .getPublicUrl(asset.image);
+
+          if (imageData?.publicUrl) {
+            urls[asset.id] = imageData.publicUrl;
+          }
+        }
+
+        if (!cancelled) {
+          setImageUrls(urls);
+        }
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error("FEATURED ASSETS LOAD ERROR:", error);
+
+        setErrorMessage(
+          "Unable to load assets right now."
+        );
+
+        setLoading(false);
+      }
     }
 
     loadAssets();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const normalizedQuery = query
@@ -174,6 +222,19 @@ export default function FeaturedModels({
               Loading the latest creations.
             </p>
           </div>
+        ) : errorMessage ? (
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/5 px-6 py-16 text-center">
+            <p className="text-lg font-medium text-white">
+              {errorMessage}
+            </p>
+
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-5 rounded-full border border-white/10 px-5 py-2.5 text-sm text-zinc-300 transition-colors hover:bg-white hover:text-black"
+            >
+              Try again
+            </button>
+          </div>
         ) : filteredAssets.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredAssets.map((asset) => (
@@ -224,7 +285,7 @@ export default function FeaturedModels({
                   </div>
 
                   <div className="mb-4 text-xs text-zinc-500">
-                    ★ {asset.rating || "0"}
+                    {asset.rating || "0"}
                   </div>
 
                   <a
