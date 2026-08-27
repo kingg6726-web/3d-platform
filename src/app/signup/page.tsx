@@ -24,6 +24,7 @@ export default function SignUpPage() {
         data: {
           username,
         },
+        emailRedirectTo: `${window.location.origin}/signin`,
       },
     });
 
@@ -31,7 +32,7 @@ export default function SignUpPage() {
       setMessage(error.message);
     } else {
       setMessage(
-        `Account created. Your username is ${username}. Check your email if confirmation is required.`
+        `Account created. Your username is ${username}. Check your email to confirm your account.`
       );
       setEmail("");
       setPassword("");

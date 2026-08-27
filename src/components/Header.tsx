@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function Header() {
   const [username, setUsername] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   async function loadUser() {
@@ -14,16 +15,18 @@ export default function Header() {
 
     if (!user) {
       setUsername(null);
+      setAvatarUrl(null);
       return;
     }
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("username")
+      .select("username, avatar_url")
       .eq("id", user.id)
       .single();
 
     setUsername(profile?.username || "user");
+    setAvatarUrl(profile?.avatar_url || null);
   }
 
   useEffect(() => {
@@ -42,9 +45,15 @@ export default function Header() {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
+
     setUsername(null);
+    setAvatarUrl(null);
     setMenuOpen(false);
   }
+
+  const avatarLetter = username
+    ? username.charAt(0).toUpperCase()
+    : "?";
 
   return (
     <header className="w-full border-b border-[var(--border)]">
@@ -91,8 +100,16 @@ export default function Header() {
                 onClick={() => setMenuOpen((open) => !open)}
                 className="flex items-center gap-3 rounded-full border border-[var(--border)] px-2 py-1.5 transition-colors hover:bg-[var(--surface)]"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--foreground)] text-xs font-semibold text-[var(--background)]">
-                  {username.charAt(0).toUpperCase()}
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--foreground)] text-xs font-semibold text-[var(--background)]">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={username}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    avatarLetter
+                  )}
                 </div>
 
                 <span className="hidden max-w-[180px] truncate text-sm text-[var(--muted)] sm:block">
@@ -108,13 +125,29 @@ export default function Header() {
                 <div className="absolute right-0 top-full z-50 w-52 pt-3">
                   <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)] shadow-2xl">
                     <div className="border-b border-[var(--border)] px-4 py-3">
-                      <p className="truncate text-xs text-[var(--muted)]">
-                        Signed in as
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--foreground)] text-sm font-semibold text-[var(--background)]">
+                          {avatarUrl ? (
+                            <img
+                              src={avatarUrl}
+                              alt={username}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            avatarLetter
+                          )}
+                        </div>
 
-                      <p className="mt-1 truncate text-sm text-[var(--foreground)]">
-                        @{username}
-                      </p>
+                        <div className="min-w-0">
+                          <p className="truncate text-xs text-[var(--muted)]">
+                            Signed in as
+                          </p>
+
+                          <p className="mt-1 truncate text-sm text-[var(--foreground)]">
+                            @{username}
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="p-2">
