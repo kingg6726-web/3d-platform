@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import MyVideoCard from "./MyVideoCard";
@@ -40,8 +41,11 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   async function loadVideos(userId: string) {
     const { data } = await supabase
@@ -70,22 +74,22 @@ export default function ProfilePage() {
   useEffect(() => {
     async function loadProfile() {
       const {
-        data: { user },
+        data: { user: currentUser },
       } = await supabase.auth.getUser();
 
-      if (!user) {
+      if (!currentUser) {
         setLoading(false);
         return;
       }
 
-      setUser(user);
+      setUser(currentUser);
 
-      await loadProfileData(user.id);
+      await loadProfileData(currentUser.id);
 
       const { data: userAssets } = await supabase
         .from("assets")
         .select("id, slug, name, type, category, price, image")
-        .eq("user_id", user.id)
+        .eq("user_id", currentUser.id)
         .order("created_at", { ascending: false });
 
       const assetsWithImages = await Promise.all(
@@ -109,14 +113,129 @@ export default function ProfilePage() {
       );
 
       setAssets(assetsWithImages);
-
-      await loadVideos(user.id);
+      await loadVideos(currentUser.id);
 
       setLoading(false);
     }
 
     loadProfile();
   }, []);
+
+  async function handleAvatarUpload(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const {
+      data: { user: currentUser },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !currentUser) {
+      console.error("Authentication error:", userError);
+      alert("You are not authenticated. Please sign in again.");
+      event.target.value = "";
+      return;
+    }
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("Please upload a JPG, PNG, WEBP, or GIF image.");
+      event.target.value = "";
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      alert("Avatar must be smaller than 5 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      const extension =
+        file.name.split(".").pop()?.toLowerCase() || "jpg";
+
+      const filePath = `${currentUser.id}/avatar.${extension}`;
+
+      console.log("Uploading avatar:", {
+        userId: currentUser.id,
+        filePath,
+        bucket: "avatar",
+      });
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatar")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+          contentType: file.type,
+        });
+
+      if (uploadError) {
+        console.error("Avatar upload error:", uploadError);
+        alert(
+          `Failed to upload avatar: ${uploadError.message}`
+        );
+        return;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage
+        .from("avatar")
+        .getPublicUrl(filePath);
+
+      const avatarUrl = `${publicUrl}?v=${Date.now()}`;
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          avatar_url: avatarUrl,
+        })
+        .eq("id", currentUser.id);
+
+      if (profileError) {
+        console.error(
+          "Avatar profile update error:",
+          profileError
+        );
+
+        alert(
+          "Avatar uploaded, but profile could not be updated."
+        );
+
+        return;
+      }
+
+      setUser(currentUser);
+
+      setProfile((current) => ({
+        username: current?.username ?? null,
+        bio: current?.bio ?? null,
+        avatar_url: avatarUrl,
+      }));
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      alert(
+        "Something went wrong while uploading the avatar."
+      );
+    } finally {
+      setUploadingAvatar(false);
+      event.target.value = "";
+    }
+  }
 
   async function saveProfile() {
     if (!user) return;
@@ -174,7 +293,9 @@ export default function ProfilePage() {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
         <div className="mx-auto max-w-4xl">
-          <p className="text-zinc-400">Loading profile...</p>
+          <p className="text-zinc-400">
+            Loading profile...
+          </p>
         </div>
       </main>
     );
@@ -215,16 +336,51 @@ export default function ProfilePage() {
 
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
 
-              <div className="flex h-24 w-24 shrink-0 overflow-hidden items-center justify-center rounded-full bg-white text-4xl font-semibold text-black">
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={displayUsername}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  avatarLetter
+              <div className="relative">
+
+                <div className="flex h-24 w-24 shrink-0 overflow-hidden items-center justify-center rounded-full bg-white text-4xl font-semibold text-black">
+
+                  {profile?.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={displayUsername}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    avatarLetter
+                  )}
+
+                </div>
+
+                {editing && (
+                  <label
+                    className={`absolute bottom-0 right-0 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-black bg-white text-black shadow-lg transition hover:bg-zinc-200 ${
+                      uploadingAvatar
+                        ? "cursor-not-allowed opacity-50"
+                        : ""
+                    }`}
+                  >
+                    {uploadingAvatar ? (
+                      <span className="text-xs">
+                        ...
+                      </span>
+                    ) : (
+                      <span className="text-lg leading-none">
+                        +
+                      </span>
+                    )}
+
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={handleAvatarUpload}
+                      disabled={uploadingAvatar}
+                      className="hidden"
+                    />
+                  </label>
                 )}
+
               </div>
 
               <div>
@@ -266,7 +422,9 @@ export default function ProfilePage() {
                 <input
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) =>
+                    setUsername(e.target.value)
+                  }
                   placeholder="Enter your username"
                   maxLength={30}
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-black px-4 py-3 text-white outline-none transition focus:border-white/30"
@@ -284,7 +442,9 @@ export default function ProfilePage() {
 
                 <textarea
                   value={bio}
-                  onChange={(e) => setBio(e.target.value)}
+                  onChange={(e) =>
+                    setBio(e.target.value)
+                  }
                   placeholder="Tell people about yourself"
                   rows={4}
                   maxLength={300}
@@ -298,10 +458,41 @@ export default function ProfilePage() {
                 </label>
 
                 <div className="mt-2 rounded-2xl border border-white/10 bg-black/30 p-4">
-                  <p className="text-sm text-zinc-500">
-                    Avatar upload will be added next. Until then,
-                    your profile uses the first letter of your username.
-                  </p>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+                    <div>
+                      <p className="text-sm text-white">
+                        Profile picture
+                      </p>
+
+                      <p className="mt-1 text-xs text-zinc-500">
+                        JPG, PNG, WEBP or GIF. Maximum 5 MB.
+                      </p>
+                    </div>
+
+                    <label
+                      className={`inline-flex cursor-pointer items-center justify-center rounded-full border border-white/10 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-white hover:text-black ${
+                        uploadingAvatar
+                          ? "pointer-events-none opacity-50"
+                          : ""
+                      }`}
+                    >
+                      {uploadingAvatar
+                        ? "Uploading..."
+                        : "Choose image"}
+
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={handleAvatarUpload}
+                        disabled={uploadingAvatar}
+                        className="hidden"
+                      />
+                    </label>
+
+                  </div>
+
                 </div>
               </div>
 
@@ -310,7 +501,9 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={saveProfile}
-                  disabled={saving}
+                  disabled={
+                    saving || uploadingAvatar
+                  }
                   className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving ? "Saving..." : "Save"}
@@ -319,11 +512,15 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setUsername(profile?.username || "");
+                    setUsername(
+                      profile?.username || ""
+                    );
                     setBio(profile?.bio || "");
                     setEditing(false);
                   }}
-                  disabled={saving}
+                  disabled={
+                    saving || uploadingAvatar
+                  }
                   className="rounded-full border border-white/10 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancel

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import VideoLikeButton from "@/components/VideoLikeButton";
 
 type VideoPageProps = {
   params: Promise<{
@@ -18,7 +19,7 @@ export default async function VideoPage({
   const { data: video, error } = await supabase
     .from("videos")
     .select(
-      "id, slug, title, description, creator, video, thumbnail, created_at"
+      "id, slug, title, description, creator, video, thumbnail, created_at, views"
     )
     .eq("slug", decodedSlug)
     .single();
@@ -58,11 +59,20 @@ export default async function VideoPage({
           </div>
 
           <div className="p-8">
-            <p className="text-sm text-zinc-500">
-              {video.creator}
-            </p>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-500">
+              <span>{video.creator}</span>
 
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
+              <span>•</span>
+
+              <span>
+                {video.views}{" "}
+                {video.views === 1 ? "view" : "views"}
+              </span>
+
+              <VideoLikeButton videoId={video.id} />
+            </div>
+
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
               {video.title}
             </h1>
 

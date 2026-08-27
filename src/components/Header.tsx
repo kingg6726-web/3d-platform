@@ -3,8 +3,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+type UserProfile = {
+  username: string | null;
+  avatar_url: string | null;
+};
+
 export default function Header() {
-  const [username, setUsername] = useState<string | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   async function loadUser() {
@@ -13,17 +18,20 @@ export default function Header() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      setUsername(null);
+      setProfile(null);
       return;
     }
 
-    const { data: profile } = await supabase
+    const { data: profileData } = await supabase
       .from("profiles")
-      .select("username")
+      .select("username, avatar_url")
       .eq("id", user.id)
       .single();
 
-    setUsername(profile?.username || "user");
+    setProfile({
+      username: profileData?.username || "user",
+      avatar_url: profileData?.avatar_url || null,
+    });
   }
 
   useEffect(() => {
@@ -42,9 +50,12 @@ export default function Header() {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-    setUsername(null);
+    setProfile(null);
     setMenuOpen(false);
   }
+
+  const username = profile?.username || "user";
+  const avatarLetter = username.charAt(0).toUpperCase();
 
   return (
     <header className="w-full border-b border-[var(--border)]">
@@ -79,7 +90,7 @@ export default function Header() {
           </a>
         </nav>
 
-        {username ? (
+        {profile ? (
           <div
             className="relative"
             onMouseEnter={() => setMenuOpen(true)}
@@ -90,8 +101,16 @@ export default function Header() {
               onClick={() => setMenuOpen((open) => !open)}
               className="flex items-center gap-3 rounded-full border border-[var(--border)] px-2 py-1.5 transition-colors hover:bg-[var(--surface)]"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--foreground)] text-xs font-semibold text-[var(--background)]">
-                {username.charAt(0).toUpperCase()}
+              <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[var(--foreground)] text-xs font-semibold text-[var(--background)]">
+                {profile.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={username}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  avatarLetter
+                )}
               </div>
 
               <span className="hidden max-w-[180px] truncate text-sm text-[var(--muted)] sm:block">
