@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import VideoLikeButton from "@/components/VideoLikeButton";
+import VideoPlayer from "@/components/VideoPlayer";
 
 type VideoPageProps = {
   params: Promise<{
@@ -19,7 +20,7 @@ export default async function VideoPage({
   const { data: video, error } = await supabase
     .from("videos")
     .select(
-      "id, slug, title, description, creator, video, thumbnail, created_at, views"
+      "id, slug, title, description, creator, video, thumbnail, created_at, views, user_id"
     )
     .eq("slug", decodedSlug)
     .single();
@@ -43,30 +44,32 @@ export default async function VideoPage({
       <div className="mx-auto w-full max-w-5xl">
         <Link
           href="/videos"
-          className="inline-flex rounded-full border border-white/10 px-5 py-2.5 text-sm text-zinc-400 transition-colors hover:bg-white hover:text-black"
+          className="inline-flex rounded-full border border-white/10 px-5 py-2.5 text-sm text-zinc-400 transition-all duration-200 hover:border-white/20 hover:bg-white hover:text-black"
         >
           ← Back to Videos
         </Link>
 
-        <div className="mt-8 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
-          <div className="bg-black">
-            <video
+        <div className="mt-8 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] shadow-2xl">
+          <div className="bg-black p-1">
+            <VideoPlayer
               src={videoUrl.publicUrl}
-              controls
-              poster={thumbnailUrl ?? undefined}
-              className="aspect-video w-full"
+              poster={thumbnailUrl}
             />
           </div>
 
           <div className="p-8">
             <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-500">
-              <span>{video.creator}</span>
+              <span>
+                {video.creator || "Unknown creator"}
+              </span>
 
               <span>•</span>
 
               <span>
-                {video.views}{" "}
-                {video.views === 1 ? "view" : "views"}
+                {video.views ?? 0}{" "}
+                {(video.views ?? 0) === 1
+                  ? "view"
+                  : "views"}
               </span>
 
               <VideoLikeButton videoId={video.id} />

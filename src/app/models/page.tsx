@@ -3,6 +3,8 @@ import ModelCardImage from "./ModelCardImage";
 import FavoriteCardHeart from "@/components/FavoriteCardHeart";
 import DeleteAssetButton from "./DeleteAssetButton";
 
+export const dynamic = "force-dynamic";
+
 const ADMIN_USER_ID = "86c0ce00-4bd4-4305-9b4e-8a3837d362b4";
 
 export default async function ModelsPage() {

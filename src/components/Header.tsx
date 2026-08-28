@@ -45,7 +45,6 @@ export default function Header() {
 
   async function handleSignOut() {
     await supabase.auth.signOut();
-
     setUsername(null);
     setAvatarUrl(null);
     setMenuOpen(false);
@@ -68,10 +67,10 @@ export default function Header() {
 
           <nav className="hidden items-center gap-8 md:flex">
             <a
-              href="/models"
+              href="/subscriptions"
               className="text-sm text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
             >
-              Models
+              Subscriptions
             </a>
 
             <a
@@ -218,10 +217,10 @@ export default function Header() {
 
         <nav className="flex items-center justify-center gap-8 pb-4 md:hidden">
           <a
-            href="/models"
+            href="/subscriptions"
             className="text-sm text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
           >
-            Models
+            Subscriptions
           </a>
 
           <a

@@ -38,6 +38,18 @@ export default function UploadVideoPage() {
         return;
       }
 
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      const creator = profile?.username || "user";
+
       const timestamp = Date.now();
 
       const videoPath = `${user.id}/videos/${timestamp}-${videoFile.name}`;
@@ -79,7 +91,7 @@ export default function UploadVideoPage() {
           slug,
           title: title.trim(),
           description: description.trim(),
-          creator: "King",
+          creator,
           video: videoPath,
           thumbnail: thumbnailPath,
           user_id: user.id,

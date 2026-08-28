@@ -27,6 +27,16 @@ type Asset = {
   image: string | null;
 };
 
+type Video = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  creator: string | null;
+  video: string;
+  thumbnail: string | null;
+};
+
 export default async function AuthorPage({
   params,
 }: AuthorPageProps) {
@@ -66,6 +76,45 @@ export default async function AuthorPage({
       </main>
     );
   }
+
+  const { data: videos, error: videosError } = await supabase
+    .from("videos")
+    .select(
+      "id, slug, title, description, creator, video, thumbnail"
+    )
+    .eq("user_id", profile.id)
+    .order("created_at", { ascending: false });
+
+  if (videosError) {
+    return (
+      <main className="min-h-screen bg-black px-6 py-24 text-white sm:px-10 lg:px-16">
+        <div className="mx-auto w-full max-w-7xl">
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/5 px-6 py-10">
+            <h1 className="text-2xl font-semibold">
+              Unable to load profile
+            </h1>
+
+            <p className="mt-3 text-sm text-red-300">
+              {videosError.message}
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const videosWithUrls = (videos ?? []).map((video) => {
+    const thumbnailUrl = video.thumbnail
+      ? supabase.storage
+          .from("assets")
+          .getPublicUrl(video.thumbnail).data.publicUrl
+      : null;
+
+    return {
+      ...video,
+      thumbnailUrl,
+    };
+  });
 
   const displayName =
     profile.display_name ||
@@ -122,13 +171,23 @@ export default async function AuthorPage({
                 </p>
               )}
 
-              <p className="mt-4 text-sm text-zinc-500">
-                {(assets ?? []).length}{" "}
-                {(assets ?? []).length === 1
-                  ? "asset"
-                  : "assets"}{" "}
-                published
-              </p>
+              <div className="mt-4 flex flex-wrap gap-4 text-sm text-zinc-500">
+                <span>
+                  {(assets ?? []).length}{" "}
+                  {(assets ?? []).length === 1
+                    ? "asset"
+                    : "assets"}
+                </span>
+
+                <span>•</span>
+
+                <span>
+                  {(videos ?? []).length}{" "}
+                  {(videos ?? []).length === 1
+                    ? "video"
+                    : "videos"}
+                </span>
+              </div>
             </div>
           </div>
         </section>
@@ -185,6 +244,74 @@ export default async function AuthorPage({
 
               <p className="mt-2 text-sm text-zinc-500">
                 This creator has not published any assets yet.
+              </p>
+            </div>
+          )}
+        </section>
+
+        <section className="mt-16 border-t border-white/10 pt-12">
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold">
+              Published videos
+            </h2>
+          </div>
+
+          {videosWithUrls.length > 0 ? (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {videosWithUrls.map((video) => (
+                <Link
+                  key={video.id}
+                  href={`/videos/${encodeURIComponent(video.slug)}`}
+                  className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition-colors hover:border-white/20"
+                >
+                  <div className="relative aspect-video overflow-hidden bg-zinc-950">
+                    {video.thumbnailUrl ? (
+                      <img
+                        src={video.thumbnailUrl}
+                        alt={video.title}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-sm text-zinc-600">
+                        No thumbnail
+                      </div>
+                    )}
+
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-300 group-hover:bg-black/20">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-xl transition-transform duration-300 group-hover:scale-110">
+                        <span className="ml-1 text-lg">
+                          ▶
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    <h3 className="line-clamp-2 text-lg font-medium">
+                      {video.title}
+                    </h3>
+
+                    {video.description && (
+                      <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-500">
+                        {video.description}
+                      </p>
+                    )}
+
+                    <p className="mt-4 text-sm text-zinc-500">
+                      Watch video →
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-16 text-center">
+              <p className="text-lg font-medium text-white">
+                No videos yet
+              </p>
+
+              <p className="mt-2 text-sm text-zinc-500">
+                This creator has not published any videos yet.
               </p>
             </div>
           )}
