@@ -49,25 +49,77 @@ body {
   color: var(--foreground);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   transition:
-    background-color 200ms ease,
-    color 200ms ease;
+    background-color 250ms ease,
+    color 250ms ease;
 }
 
 body * {
   transition:
     background-color 200ms ease,
     border-color 200ms ease,
-    color 200ms ease;
+    color 200ms ease,
+    opacity 200ms ease,
+    transform 200ms ease,
+    box-shadow 200ms ease;
 }
 
-/* ------------------------------------------------------------------
-   LIGHT THEME COMPATIBILITY
-   Converts the old hard-coded dark UI colors into light-theme colors.
-   Dark theme remains unchanged.
-------------------------------------------------------------------- */
+button,
+a {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    opacity 200ms ease,
+    transform 200ms ease,
+    box-shadow 200ms ease;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  transform: none;
+}
+
+a:hover {
+  transition-duration: 250ms;
+}
+
+input,
+textarea,
+select {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    opacity 200ms ease,
+    box-shadow 200ms ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--foreground);
+}
+
+/* LIGHT THEME COMPATIBILITY */
 
 :root.light .bg-black {
   background-color: var(--background) !important;
@@ -139,4 +191,20 @@ body * {
 
 :root.light .border-white\/20 {
   border-color: rgba(0, 0, 0, 0.18) !important;
+}
+
+/* ACCESSIBILITY */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
